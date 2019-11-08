@@ -4,7 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -31,8 +33,11 @@ public class EditMemoActivity extends AppCompatActivity implements View.OnClickL
 
     String new_memo, currentTime;
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd  HH:mm");
-    int index;
     private DbAdapter dbAdapter;
+
+    int index;
+    Bundle bundle;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,19 +45,35 @@ public class EditMemoActivity extends AppCompatActivity implements View.OnClickL
         setContentView(R.layout.activity_edit_memo);
 
         initView();
-        dbAdapter=new DbAdapter(this);
+        dbAdapter = new DbAdapter(this);
 
-        btn_back=findViewById(R.id.btn_back);
-        btn_ok=findViewById(R.id.btn_ok);
+        btn_back = findViewById(R.id.btn_back);
+        btn_ok = findViewById(R.id.btn_ok);
         btn_back.setOnClickListener(this);
         btn_ok.setOnClickListener(this);
+
+        bundle = this.getIntent().getExtras();
+        if (bundle.getString("type").equals("EDIT")) {
+            txtTitle.setText("編輯便條");
+            index = bundle.getInt("item_id");
+            Cursor cursor = dbAdapter.queryById(index);
+            edtmemo.setText(cursor.getString(cursor.getColumnIndexOrThrow("memo")));
+
+            for (int i = 0; i < sppinerAdapter.getCount(); i++) {
+                if (color_list.get(i).code.equals(cursor.getString(cursor.getColumnIndexOrThrow("bgcolor")))) {
+                    sp_colors.setSelection(i);
+
+                }
+
+            }
+        }
     }
     private  void  initView(){
         txtTitle = findViewById(R.id.txtTitle);
         edtmemo=findViewById(R.id.edtMemo);
         sp_colors=findViewById(R.id.sp_colors);
         colors = getResources().getStringArray(R.array.colors);
-        LinearLayout container = new LinearLayout(this);
+        //LinearLayout container = new LinearLayout(this);
         color_list = new ArrayList<Colordata>();
 
         color_list.add(new Colordata("Red","#e4222d"));
@@ -87,18 +108,32 @@ public class EditMemoActivity extends AppCompatActivity implements View.OnClickL
             case R.id.btn_ok:{
                 currentTime=df.format(new Date(System.currentTimeMillis()));
                 new_memo = edtmemo.getText().toString();
-
-                try {
-                    //呼叫adapter的方法處理新增
-                    dbAdapter.creatMemo(currentTime, new_memo, null, selected_color);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    //回到列表
-                    Intent i = new Intent(this, MainActivity.class);
-                    startActivity(i);
+                if (bundle.getString("type").equals("EDIT")) {
+                    try {
+                        //呼叫adapter的方法處理新增
+                        dbAdapter.updateMemo(index,currentTime, new_memo, null, selected_color);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        //回到列表
+                        Intent i = new Intent(this, MainActivity.class);
+                        startActivity(i);
+                    }
+                    break;
                 }
-                break;
+                else {
+                    try {
+                        //呼叫adapter的方法處理新增
+                        dbAdapter.creatMemo(currentTime, new_memo, null, selected_color);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        //回到列表
+                        Intent i = new Intent(this, MainActivity.class);
+                        startActivity(i);
+                    }
+                    break;
+                }
             }
         }
 
